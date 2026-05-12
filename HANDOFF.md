@@ -96,19 +96,27 @@ When iterating on `packages/db` or `libs/elo` while the api is running, open a s
 - ✅ `PrismaService` provided globally via `PrismaModule`
 - ✅ `POST /auth/sync` — authenticated; upserts a local `User` from Supabase JWT claims (`sub` → `clerkId`, `email`). Idempotent.
 - ✅ `GET /venues` — public; returns venues with nested `pitches`, ordered by name
-- ✅ `POST /bookings` — authenticated; calls `createBooking` from `@footballtomic/db`. Extracts `userId` from JWT, not request body. 201 / 409 / 401.
+- ✅ `POST /bookings` — authenticated; calls `createBooking` from `@footballtomic/db`. Extracts `userId` from JWT. Body accepts `teamSelectionMode: RANDOM|SELECTED` and `bookerTeam: HOME|AWAY` (required when SELECTED). The booker is inserted as a `MatchParticipant` atomically. 201 / 400 / 409 / 401.
+- ✅ `GET /matches` — public; returns OPEN/BOOKED matches with nested pitch+venue+participants
+- ✅ `GET /matches/:id` — public; match detail with `capacity` (derived from pitch.type)
+- ✅ `POST /matches/:id/join` — authenticated; body `{ team? }`. SELECTED mode requires `team`; RANDOM mode forbids it. When RANDOM roster hits capacity, teams are shuffled 50/50 atomically. 201 / 400 / 403 / 409.
+- ✅ `POST /matches/:id/complete` — authenticated; body `{ homeScore, awayScore }`. Validates every participant has a team and ≥1 per side, marks COMPLETED, then calls `processElo(matchId)` inline. 200 / 400 / 403 / 409.
+- ✅ `GET /users/me` — authenticated; returns local user row
+- ✅ `GET /users/me/rating` — authenticated; latest `EloRating.ratingAfter` or 1000 default
+- ✅ `GET /users/me/elo-history` — authenticated; last 20 rating rows with match+venue
 - ✅ Passport JWT strategy validates Supabase HMAC tokens via `SUPABASE_JWT_SECRET`
 - ✅ Reusable `JwtAuthGuard`
-- ✅ e2e tests pass (8/8) — `apps/api/test/`, uses real DB
-- ✅ Boots cleanly via `pnpm --filter @footballtomic/api start:dev` — verified end-to-end
+- ✅ Boots cleanly via `pnpm --filter @footballtomic/api start:dev`
 
 ### Database (`packages/db`)
 
-- ✅ Prisma schema covers: User, Venue, Pitch, Match, Booking, MatchParticipant, EloRating (see `CLAUDE.md` → Core Data Models for the full field list)
-- ✅ `createBooking` service — single Serializable transaction creating `Match` + `Booking` with `paymentStatus: MOCKED_PAID`
-- ✅ ELO orchestrator (`processElo(matchId)`) — idempotent, reads participants, fetches latest ratings (default 1000), calls `computeElo`, writes new `EloRating` rows in a batch transaction
-- ✅ BullMQ queue scaffolding for `elo-recalc` (not wired into API yet; needs `REDIS_URL`)
-- ✅ 16/16 db tests pass
+- ✅ Prisma schema covers: User, Venue, Pitch, Match (now with `teamSelectionMode: RANDOM|SELECTED`), Booking, MatchParticipant (team is now nullable), EloRating
+- ✅ `createBooking` service — single Serializable transaction creating `Match` + `Booking` + booker's `MatchParticipant` with `paymentStatus: MOCKED_PAID`. Defaults to SELECTED/HOME if mode not supplied.
+- ✅ `joinMatch` service — Serializable txn. Validates SELECTED requires team / RANDOM forbids team, capacity from pitch type, no duplicate joiners. When RANDOM roster fills, atomically shuffles HOME/AWAY 50/50.
+- ✅ `completeMatch` service — validates all participants have a team and ≥1 per side, sets COMPLETED + scores in a txn, then calls `processElo` inline (processElo runs its own txn and is idempotent).
+- ✅ ELO orchestrator (`processElo(matchId)`) — idempotent, reads participants, fetches latest ratings (default 1000), calls `computeElo`, writes new `EloRating` rows
+- ✅ Seed file at `prisma/seed.ts` — one venue "Joga Cage Brixton" with two 5-a-side pitches
+- ✅ BullMQ queue scaffolding for `elo-recalc` (still not wired in; the MVP calls `processElo` inline)
 
 ### ELO library (`libs/elo`)
 
@@ -123,8 +131,10 @@ When iterating on `packages/db` or `libs/elo` while the api is running, open a s
 - ✅ Supabase Auth client with AsyncStorage persistence (`lib/supabase.ts`)
 - ✅ `AuthProvider` (`lib/auth-context.tsx`) — manages session, sets Axios `Authorization` header on auth state change, calls `POST /auth/sync` automatically on `signUp`
 - ✅ Axios client (`lib/api.ts`) with `EXPO_PUBLIC_API_URL` base
-- ✅ React Query hooks: `useVenues`, `useCreateBooking`
-- ✅ Bottom tabs: Pitches feed, Profile
+- ✅ React Query hooks: `use-venues`, `use-create-booking`, `use-matches`/`use-match`, `use-join-match`, `use-complete-match`, `use-me`, `use-rating`
+- ✅ Bottom tabs: Pitches feed, Matches (open matches list), Profile (with ELO rating)
+- ✅ Booking flow at `app/book/[pitchId].tsx` — slot, match type, team selection mode toggle, bookerTeam picker
+- ✅ Match detail at `app/match/[id].tsx` — roster, Join HOME/AWAY (SELECTED) or single Join (RANDOM), result entry (score inputs → complete)
 - ✅ Screenshot capture script: `pnpm exec tsx scripts/capture-screenshots.ts` (Playwright, web-rendered)
 
 ### Recently-fixed bugs (the reason this handoff exists)
@@ -137,12 +147,12 @@ These three fixes are present on `main` in the working tree (see current state o
 
 ## 7. What still needs to be done
 
-### Near-term (booking-engine MVP)
+### Near-term (post-MVP-demo)
 
-- **Wire BullMQ `elo-recalc` queue into the API.** When a match transitions to `COMPLETED`, enqueue a job; the worker calls `processElo(matchId)`. Needs `REDIS_URL` and a worker entry point (`packages/db/src/elo/queue.ts` has the scaffolding).
-- **Match completion flow.** No endpoint exists yet for marking a match `COMPLETED` and submitting `homeScore`/`awayScore`. Spec: friendly matches use dual-captain verification, ranked matches require referee submission.
-- **Ranked vs friendly distinction in API.** Schema supports `matchType` but the booking endpoint doesn't branch behaviour yet.
-- **Mobile booking flow.** `useCreateBooking` exists but there's no fleshed-out screen — needs pitch detail view, date/time picker, confirmation.
+- **Wire BullMQ `elo-recalc` queue into the API.** Completion currently calls `processElo` inline (synchronous). Swap in the queue when load justifies it; `processElo` is already idempotent so the change is mechanical. Needs `REDIS_URL`.
+- **Real date/time pickers.** The booking screen currently defaults to "next top-of-hour, 1 hour" for demo simplicity. Replace with proper pickers.
+- **Match completion verification.** Right now any authenticated user can complete any match. Spec: friendly matches use dual-captain verification, ranked matches require referee submission.
+- **Ranked vs friendly distinction in API.** `matchType` is captured but the booking + completion paths don't branch on it yet.
 - **Venue admin surface.** No UI for `VenueAdmin` role yet; venues are seeded manually.
 
 ### Medium-term

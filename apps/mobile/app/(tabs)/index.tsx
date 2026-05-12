@@ -1,15 +1,14 @@
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useVenues } from "@/hooks/use-venues";
-import { useCreateBooking } from "@/hooks/use-create-booking";
-import type { Venue, Pitch } from "@/lib/types";
+import type { Pitch, Venue } from "@/lib/types";
 import { colors } from "@/constants/Colors";
 
 function pitchLabel(type: Pitch["type"]): string {
@@ -17,31 +16,12 @@ function pitchLabel(type: Pitch["type"]): string {
 }
 
 function VenueCard({ venue }: { venue: Venue }) {
-  const { mutate: book, isPending } = useCreateBooking();
+  const router = useRouter();
   const pitch = venue.pitches[0];
 
   function handleBook() {
     if (!pitch) return;
-
-    const start = new Date();
-    start.setHours(start.getHours() + 1, 0, 0, 0);
-    const end = new Date(start);
-    end.setHours(end.getHours() + 1);
-
-    book(
-      {
-        pitchId: pitch.id,
-        matchType: "FRIENDLY",
-        startTime: start.toISOString(),
-        endTime: end.toISOString(),
-        totalCost: 4500,
-      },
-      {
-        onSuccess: () => Alert.alert("Booked!", `${venue.name} is confirmed.`),
-        onError: (err) =>
-          Alert.alert("Booking failed", err.message || "Try again later."),
-      },
-    );
+    router.push(`/book/${pitch.id}`);
   }
 
   return (
@@ -75,18 +55,12 @@ function VenueCard({ venue }: { venue: Venue }) {
 
       <Pressable
         onPress={handleBook}
-        disabled={isPending || !pitch}
-        className={`items-center rounded-xl py-3.5 ${
-          isPending ? "bg-joga-border" : "bg-joga-volt active:opacity-80"
-        }`}
+        disabled={!pitch}
+        className="items-center rounded-xl bg-joga-volt py-3.5 active:opacity-80"
         accessibilityRole="button"
         accessibilityLabel={`Book ${venue.name}`}
       >
-        {isPending ? (
-          <ActivityIndicator color={colors.volt} />
-        ) : (
-          <Text className="text-base font-bold text-joga-black">Book Now</Text>
-        )}
+        <Text className="text-base font-bold text-joga-black">Book Now</Text>
       </Pressable>
     </View>
   );

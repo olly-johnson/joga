@@ -18,12 +18,18 @@ export interface Venue {
   pitches: Pitch[];
 }
 
+export type Team = "HOME" | "AWAY";
+export type TeamSelectionMode = "RANDOM" | "SELECTED";
+export type MatchStatus = "OPEN" | "BOOKED" | "COMPLETED" | "CANCELLED";
+
 export interface CreateBookingPayload {
   pitchId: string;
   matchType: "FRIENDLY" | "RANKED";
   startTime: string;
   endTime: string;
   totalCost: number;
+  teamSelectionMode: TeamSelectionMode;
+  bookerTeam?: Team;
 }
 
 export interface BookingResult {
@@ -31,9 +37,10 @@ export interface BookingResult {
     id: string;
     pitchId: string;
     matchType: string;
+    teamSelectionMode: TeamSelectionMode;
     startTime: string;
     endTime: string;
-    status: string;
+    status: MatchStatus;
   };
   booking: {
     id: string;
@@ -42,4 +49,54 @@ export interface BookingResult {
     paymentStatus: string;
     totalCost: number;
   };
+  participant: {
+    id: string;
+    matchId: string;
+    userId: string;
+    team: Team | null;
+  };
+}
+
+export interface MatchParticipant {
+  id: string;
+  matchId: string;
+  userId: string;
+  team: Team | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface MatchSummary {
+  id: string;
+  pitchId: string;
+  matchType: "FRIENDLY" | "RANKED";
+  teamSelectionMode: TeamSelectionMode;
+  startTime: string;
+  endTime: string;
+  status: MatchStatus;
+  homeScore: number | null;
+  awayScore: number | null;
+  pitch: Pitch & { venue: Venue };
+  participants: MatchParticipant[];
+}
+
+export interface MatchDetail extends MatchSummary {
+  capacity: number;
+}
+
+export interface JoinMatchPayload {
+  team?: Team;
+}
+
+export interface CompleteMatchPayload {
+  homeScore: number;
+  awayScore: number;
+}
+
+export interface RatingResponse {
+  rating: number;
 }

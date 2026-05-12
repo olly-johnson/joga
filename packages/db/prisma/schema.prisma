@@ -42,6 +42,11 @@ enum Team {
   AWAY
 }
 
+enum TeamSelectionMode {
+  RANDOM
+  SELECTED
+}
+
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   clerkId   String   @unique @map("clerk_id")
@@ -102,17 +107,18 @@ model Pitch {
 }
 
 model Match {
-  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pitchId   String      @map("pitch_id") @db.Uuid
-  matchType MatchType   @map("match_type")
-  startTime DateTime    @map("start_time")
-  endTime   DateTime    @map("end_time")
-  status    MatchStatus @default(OPEN)
-  refereeId String?     @map("referee_id") @db.Uuid
-  homeScore Int?        @map("home_score")
-  awayScore Int?        @map("away_score")
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pitchId           String            @map("pitch_id") @db.Uuid
+  matchType         MatchType         @map("match_type")
+  teamSelectionMode TeamSelectionMode @default(SELECTED) @map("team_selection_mode")
+  startTime         DateTime          @map("start_time")
+  endTime           DateTime          @map("end_time")
+  status            MatchStatus       @default(OPEN)
+  refereeId         String?           @map("referee_id") @db.Uuid
+  homeScore         Int?              @map("home_score")
+  awayScore         Int?              @map("away_score")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
 
   pitch        Pitch              @relation(fields: [pitchId], references: [id], onDelete: Cascade)
   referee      User?              @relation(fields: [refereeId], references: [id], onDelete: SetNull)
@@ -144,7 +150,7 @@ model MatchParticipant {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   matchId   String   @map("match_id") @db.Uuid
   userId    String   @map("user_id") @db.Uuid
-  team      Team
+  team      Team?
   createdAt DateTime @default(now()) @map("created_at")
 
   match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
