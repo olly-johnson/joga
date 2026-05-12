@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { createBooking } from "@footballtomic/db";
 import { CreateBookingDto } from "./create-booking.dto.js";
-import { MatchType } from "@footballtomic/db";
+import { MatchType, Team, TeamSelectionMode } from "@footballtomic/db";
 
 @Injectable()
 export class BookingsService {
@@ -17,6 +17,8 @@ export class BookingsService {
         startTime: new Date(dto.startTime),
         endTime: new Date(dto.endTime),
         totalCost: dto.totalCost,
+        teamSelectionMode: dto.teamSelectionMode as TeamSelectionMode | undefined,
+        bookerTeam: dto.bookerTeam as Team | undefined,
       },
       this.prisma,
     );

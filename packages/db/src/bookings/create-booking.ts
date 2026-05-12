@@ -1,11 +1,14 @@
 import {
   Booking,
   Match,
+  MatchParticipant,
   MatchStatus,
   MatchType,
   PaymentStatus,
   Prisma,
   PrismaClient,
+  Team,
+  TeamSelectionMode,
 } from "@prisma/client";
 import { prisma as defaultClient } from "../client";
 
@@ -18,6 +21,13 @@ export class BookingConflictError extends Error {
   }
 }
 
+export class BookingValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BookingValidationError";
+  }
+}
+
 export interface CreateBookingInput {
   pitchId: string;
   userId: string;
@@ -25,11 +35,14 @@ export interface CreateBookingInput {
   startTime: Date;
   endTime: Date;
   totalCost: number;
+  teamSelectionMode?: TeamSelectionMode;
+  bookerTeam?: Team;
 }
 
 export interface CreateBookingResult {
   match: Match;
   booking: Booking;
+  participant: MatchParticipant;
 }
 
 // Payments are mocked for the MVP — totalCost is recorded and paymentStatus
@@ -40,7 +53,23 @@ export async function createBooking(
   client: PrismaClient = defaultClient
 ): Promise<CreateBookingResult> {
   if (input.endTime <= input.startTime) {
-    throw new Error("endTime must be strictly after startTime");
+    throw new BookingValidationError("endTime must be strictly after startTime");
+  }
+
+  const teamSelectionMode = input.teamSelectionMode ?? TeamSelectionMode.SELECTED;
+
+  // SELECTED → booker must choose their team up front; RANDOM → team is null
+  // and assigned later when the roster fills.
+  let bookerTeam: Team | null;
+  if (teamSelectionMode === TeamSelectionMode.SELECTED) {
+    bookerTeam = input.bookerTeam ?? Team.HOME;
+  } else {
+    if (input.bookerTeam) {
+      throw new BookingValidationError(
+        "bookerTeam must not be supplied when teamSelectionMode is RANDOM"
+      );
+    }
+    bookerTeam = null;
   }
 
   return client.$transaction(
@@ -62,6 +91,7 @@ export async function createBooking(
         data: {
           pitchId: input.pitchId,
           matchType: input.matchType,
+          teamSelectionMode,
           startTime: input.startTime,
           endTime: input.endTime,
           status: MatchStatus.BOOKED,
@@ -77,7 +107,15 @@ export async function createBooking(
         },
       });
 
-      return { match, booking };
+      const participant = await tx.matchParticipant.create({
+        data: {
+          matchId: match.id,
+          userId: input.userId,
+          team: bookerTeam,
+        },
+      });
+
+      return { match, booking, participant };
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
   );

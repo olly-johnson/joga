@@ -4,4 +4,6 @@ export class CreateBookingDto {
   startTime!: string;
   endTime!: string;
   totalCost!: number;
+  teamSelectionMode?: "RANDOM" | "SELECTED";
+  bookerTeam?: "HOME" | "AWAY";
 }

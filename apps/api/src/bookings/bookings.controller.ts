@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   HttpCode,
@@ -11,7 +12,7 @@ import {
 } from "@nestjs/common";
 import { BookingsService } from "./bookings.service.js";
 import { CreateBookingDto } from "./create-booking.dto.js";
-import { BookingConflictError } from "@footballtomic/db";
+import { BookingConflictError, BookingValidationError } from "@footballtomic/db";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 
 @Controller("bookings")
@@ -34,6 +35,9 @@ export class BookingsController {
     } catch (err) {
       if (err instanceof BookingConflictError) {
         throw new ConflictException(err.message);
+      }
+      if (err instanceof BookingValidationError) {
+        throw new BadRequestException(err.message);
       }
       throw err;
     }

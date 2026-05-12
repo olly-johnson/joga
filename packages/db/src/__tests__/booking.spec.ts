@@ -3,9 +3,12 @@ import {
   MatchType,
   PaymentStatus,
   PitchType,
+  Team,
+  TeamSelectionMode,
 } from "@prisma/client";
 import {
   BookingConflictError,
+  BookingValidationError,
   createBooking,
 } from "../bookings/create-booking";
 import { cleanDatabase, prisma } from "./helpers/prisma-test";
@@ -59,6 +62,8 @@ describe("createBooking service", () => {
       startTime: start,
       endTime: end,
       totalCost: 4500,
+      teamSelectionMode: TeamSelectionMode.SELECTED,
+      bookerTeam: Team.HOME,
     });
 
     expect(match.pitchId).toBe(pitch.id);
@@ -79,6 +84,56 @@ describe("createBooking service", () => {
       where: { matchId: match.id },
     });
     expect(persisted).not.toBeNull();
+
+    const participants = await prisma.matchParticipant.findMany({
+      where: { matchId: match.id },
+    });
+    expect(participants).toHaveLength(1);
+    expect(participants[0].userId).toBe(user.id);
+    expect(participants[0].team).toBe(Team.HOME);
+    expect(match.teamSelectionMode).toBe(TeamSelectionMode.SELECTED);
+  });
+
+  it("RANDOM mode: booker is added as a participant with team=null", async () => {
+    const { pitch } = await seedVenueWithPitch();
+    const user = await seedUser("random");
+
+    const { match } = await createBooking({
+      pitchId: pitch.id,
+      userId: user.id,
+      matchType: MatchType.RANKED,
+      startTime: new Date("2030-01-07T18:00:00Z"),
+      endTime: new Date("2030-01-07T19:00:00Z"),
+      totalCost: 4500,
+      teamSelectionMode: TeamSelectionMode.RANDOM,
+    });
+
+    expect(match.teamSelectionMode).toBe(TeamSelectionMode.RANDOM);
+
+    const participants = await prisma.matchParticipant.findMany({
+      where: { matchId: match.id },
+    });
+    expect(participants).toHaveLength(1);
+    expect(participants[0].userId).toBe(user.id);
+    expect(participants[0].team).toBeNull();
+  });
+
+  it("rejects bookerTeam when teamSelectionMode is RANDOM", async () => {
+    const { pitch } = await seedVenueWithPitch();
+    const user = await seedUser("badmode");
+
+    await expect(
+      createBooking({
+        pitchId: pitch.id,
+        userId: user.id,
+        matchType: MatchType.RANKED,
+        startTime: new Date("2030-01-08T18:00:00Z"),
+        endTime: new Date("2030-01-08T19:00:00Z"),
+        totalCost: 4500,
+        teamSelectionMode: TeamSelectionMode.RANDOM,
+        bookerTeam: Team.HOME,
+      })
+    ).rejects.toBeInstanceOf(BookingValidationError);
   });
 
   it("rejects a booking when an existing match covers the exact same slot", async () => {

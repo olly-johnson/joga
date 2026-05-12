@@ -94,12 +94,12 @@ pnpm typecheck
 - **User** — base identity; linked to one or more roles
 - **Venue** — `id`, `name`, `latitude`/`longitude` (Float — PostGIS upgrade deferred), `stripeAccountId` (nullable until Stripe Connect onboarding), timestamps; has many pitches
 - **Pitch** — `id`, `venueId`, `type` (enum `FIVE_A_SIDE` / `SEVEN_A_SIDE`), `surface` (e.g. `3G`, `4G`, `Concrete`), timestamps; cascade-deleted with its venue
-- **Match** — `id`, `pitchId`, `matchType` (enum `FRIENDLY` / `RANKED`), `startTime`/`endTime`, `status` (enum `OPEN` / `BOOKED` / `COMPLETED` / `CANCELLED`, default `OPEN`), nullable `refereeId` (→ User), nullable `homeScore`/`awayScore`, timestamps; cascade-deleted with its pitch; `refereeId` set to null if the user is deleted; indexed on `(pitchId, startTime, endTime)`
+- **Match** — `id`, `pitchId`, `matchType` (enum `FRIENDLY` / `RANKED`), `teamSelectionMode` (enum `RANDOM` / `SELECTED`, default `SELECTED`), `startTime`/`endTime`, `status` (enum `OPEN` / `BOOKED` / `COMPLETED` / `CANCELLED`, default `OPEN`), nullable `refereeId` (→ User), nullable `homeScore`/`awayScore`, timestamps; cascade-deleted with its pitch; `refereeId` set to null if the user is deleted; indexed on `(pitchId, startTime, endTime)`
 - **Booking** — `id`, unique `matchId` (one booking per match), `userId` (booker), `paymentStatus` (enum `PENDING` / `MOCKED_PAID`, default `PENDING`), `totalCost` (Int — pence), timestamps; cascade-deleted with its match and its user
 - **Team** / **TeamMember** — captain + players; captain is a role on the membership
 - **Referee** — certification status, location (PostGIS point), availability windows
 - **DispatchJob** — broadcast record: match ref, radius, status, accepted_by, timestamps
-- **MatchParticipant** — `id`, `matchId`, `userId`, `team` (enum `HOME` / `AWAY`), `createdAt`; unique on `(matchId, userId)`; cascade-deleted with its match and its user
+- **MatchParticipant** — `id`, `matchId`, `userId`, `team` (nullable enum `HOME` / `AWAY` — null until assigned, e.g. RANDOM mode before the roster fills), `createdAt`; unique on `(matchId, userId)`; cascade-deleted with its match and its user
 - **EloRating** — `id`, `userId`, `matchId`, `ratingBefore` (Int), `ratingAfter` (Int), `createdAt`; unique on `(matchId, userId)`; indexed on `(userId, createdAt)` for latest-rating lookup; cascade-deleted with its match and its user
 - **Payment** / **PaymentSplit** — Stripe payment intent + split ledger (platform/venue/referee)
 
@@ -136,7 +136,7 @@ The ELO system lives in two places:
 
 **Formula:** Standard ELO. Expected score = `1 / (1 + 10^((opponentAvg - teamAvg) / 400))`. Delta = `K * (actual - expected)`. K-factor defaults to 32.
 
-**Queue:** BullMQ `elo-recalc` queue + worker scaffolding in `packages/db/src/elo/queue.ts`. Requires `REDIS_URL` env var. The worker calls `processElo` with concurrency 1. The queue is not started automatically — the NestJS API will create and enqueue jobs when a match is completed.
+**Queue:** BullMQ `elo-recalc` queue + worker scaffolding in `packages/db/src/elo/queue.ts`. **Not wired into the API yet.** `POST /matches/:id/complete` currently calls `processElo` inline (synchronous, idempotent). Swap in the queue when load justifies async — change is mechanical. Requires `REDIS_URL` env var when enabled.
 
 **What this means:**
 - New players start at rating 1000.
@@ -151,7 +151,14 @@ The API lives in `apps/api/` using NestJS 11 with a modular architecture. CORS i
 **Endpoints:**
 - `GET /venues` — public; returns all venues with nested `pitches` array, ordered by name
 - `POST /auth/sync` — authenticated; upserts a `User` row from Supabase JWT claims (`sub` → `clerkId`, `email`). Idempotent — returns existing user on repeat calls.
-- `POST /bookings` — authenticated; creates a Match + Booking via the `createBooking` service from `@footballtomic/db`. `userId` is extracted from the JWT (not the request body). Returns 201 on success, 409 on conflict, 401 if user not provisioned.
+- `POST /bookings` — authenticated; creates Match + Booking + booker `MatchParticipant` via the `createBooking` service. Body accepts optional `teamSelectionMode` (`RANDOM`/`SELECTED`, default SELECTED) and `bookerTeam` (`HOME`/`AWAY`, required for SELECTED, forbidden for RANDOM). `userId` is extracted from the JWT. 201 / 400 / 409 / 401.
+- `GET /matches` — public; OPEN/BOOKED matches with pitch+venue+participants, ordered by `startTime`
+- `GET /matches/:id` — public; match detail including derived `capacity` (5-a-side = 10, 7-a-side = 14)
+- `POST /matches/:id/join` — authenticated; body `{ team? }`. SELECTED mode requires team; RANDOM forbids it. When RANDOM roster fills to capacity, teams are shuffled HOME/AWAY 50/50 inside the same transaction. Errors: 400 (missing/forbidden team), 403 (match closed), 409 (already joined / full).
+- `POST /matches/:id/complete` — authenticated; body `{ homeScore, awayScore }`. Validates all participants have a team and ≥1 per side, sets status COMPLETED + scores, then calls `processElo` inline. Errors: 400 (unassigned/unbalanced teams), 403 (wrong status), 409 (already completed).
+- `GET /users/me` — authenticated; local user row (id, email, name, createdAt)
+- `GET /users/me/rating` — authenticated; latest `EloRating.ratingAfter` or 1000 for new players
+- `GET /users/me/elo-history` — authenticated; last 20 ELO rows with embedded match+venue
 
 **Prisma integration:** `PrismaService` extends `PrismaClient` and is provided globally via `PrismaModule`. All modules inject it for database access.
 
