@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+*.env.local
+.turbo/
+
+# Prisma — migrations MUST be committed (they recreate the schema).
+# Only the generated client is ignored.
+packages/db/src/generated/
+
+# Local Claude Code settings (per-developer permissions, not shared)
+.claude/settings.local.json
+
+# Scratch / working directory for issue screenshots
+issues/

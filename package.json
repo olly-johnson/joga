@@ -1,0 +1,28 @@
+{
+  "name": "footballtomic",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "echo 'TODO: turbo dev'",
+    "test": "pnpm --filter @footballtomic/db test",
+    "test:api": "echo 'TODO: api tests'",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "db:migrate": "pnpm --filter @footballtomic/db db:migrate",
+    "db:seed": "pnpm --filter @footballtomic/db db:seed",
+    "db:studio": "pnpm --filter @footballtomic/db db:studio"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@playwright/test": "^1.59.1",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
+    "dotenv-cli": "^11.0.0",
+    "eslint": "^9.17.0",
+    "playwright": "^1.59.1",
+    "serve": "^14.2.6",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.20.0"
+  }
+}
