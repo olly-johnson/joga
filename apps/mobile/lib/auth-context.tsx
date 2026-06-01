@@ -8,6 +8,16 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { api } from "./api";
+import { shouldProvisionOnAuthChange } from "./auth-events";
+
+/** Idempotently ensure the local User row exists for the current session. */
+async function provisionUser() {
+  try {
+    await api.post("/auth/sync");
+  } catch {
+    // Best-effort; a later authenticated request will surface real failures.
+  }
+}
 
 interface AuthState {
   session: Session | null;
@@ -40,10 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+    } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       if (s?.access_token) {
         api.defaults.headers.common.Authorization = `Bearer ${s.access_token}`;
+        if (shouldProvisionOnAuthChange(event, true)) {
+          void provisionUser();
+        }
       } else {
         delete api.defaults.headers.common.Authorization;
       }
