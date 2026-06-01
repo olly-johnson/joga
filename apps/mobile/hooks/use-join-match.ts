@@ -13,6 +13,7 @@ export function useJoinMatch(matchId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches"] });
       queryClient.invalidateQueries({ queryKey: ["matches", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["my-matches"] });
     },
   });
 }

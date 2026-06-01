@@ -16,6 +16,7 @@ export function useCompleteMatch(matchId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches"] });
       queryClient.invalidateQueries({ queryKey: ["matches", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["my-matches"] });
       queryClient.invalidateQueries({ queryKey: ["rating"] });
     },
   });
