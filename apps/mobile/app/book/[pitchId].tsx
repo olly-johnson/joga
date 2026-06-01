@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -11,10 +10,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useVenues } from "@/hooks/use-venues";
 import { useCreateBooking } from "@/hooks/use-create-booking";
+import {
+  bookingErrorMessage,
+  composeSlot,
+  formatSlotLabel,
+  upcomingDates,
+} from "@/lib/booking-slots";
 import type { Team, TeamSelectionMode } from "@/lib/types";
 import { colors } from "@/constants/Colors";
 
-function ChoiceChip<T extends string>({
+const BOOKABLE_HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+
+function ChoiceChip({
   active,
   onPress,
   label,
@@ -29,7 +36,7 @@ function ChoiceChip<T extends string>({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`flex-1 items-center rounded-xl border px-4 py-3 ${
+      className={`min-h-[44px] flex-1 items-center justify-center rounded-xl border px-4 py-3 ${
         active
           ? "border-joga-volt bg-joga-volt/10"
           : "border-joga-border bg-joga-card"
@@ -38,9 +45,39 @@ function ChoiceChip<T extends string>({
       accessibilityState={{ selected: active, disabled }}
     >
       <Text
-        className={`text-sm font-bold ${
-          active ? "text-joga-volt" : "text-joga-text"
-        }`}
+        className={`text-sm font-bold ${active ? "text-joga-volt" : "text-joga-text"}`}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function PickerChip({
+  active,
+  onPress,
+  label,
+  accessibilityLabel,
+}: {
+  active: boolean;
+  onPress: () => void;
+  label: string;
+  accessibilityLabel?: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`mr-2 min-h-[44px] items-center justify-center rounded-xl border px-4 py-3 ${
+        active
+          ? "border-joga-volt bg-joga-volt/10"
+          : "border-joga-border bg-joga-card"
+      } active:opacity-80`}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={accessibilityLabel ?? label}
+    >
+      <Text
+        className={`text-sm font-bold ${active ? "text-joga-volt" : "text-joga-text"}`}
       >
         {label}
       </Text>
@@ -63,27 +100,21 @@ export default function BookingScreen() {
     return null;
   }, [venues, pitchId]);
 
+  const dates = useMemo(() => upcomingDates(new Date(), 7), []);
+  const [dateIndex, setDateIndex] = useState(0);
+  const [hour, setHour] = useState(19);
   const [matchType, setMatchType] = useState<"FRIENDLY" | "RANKED">("RANKED");
   const [mode, setMode] = useState<TeamSelectionMode>("SELECTED");
   const [bookerTeam, setBookerTeam] = useState<Team>("HOME");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Default start = next top-of-hour, 1h slot
-  const { startISO, endISO, label } = useMemo(() => {
-    const start = new Date();
-    start.setHours(start.getHours() + 1, 0, 0, 0);
-    const end = new Date(start);
-    end.setHours(end.getHours() + 1);
-    const fmt = (d: Date) =>
-      d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    return {
-      startISO: start.toISOString(),
-      endISO: end.toISOString(),
-      label: `${fmt(start)} – ${fmt(end)}, ${start.toLocaleDateString()}`,
-    };
-  }, []);
+  const selectedDate = dates[dateIndex];
+  const slotLabel = formatSlotLabel(selectedDate, hour);
 
   function handleSubmit() {
     if (!pitch) return;
+    setErrorMessage(null);
+    const { startISO, endISO } = composeSlot(selectedDate, hour);
     book(
       {
         pitchId: pitch.id,
@@ -95,19 +126,8 @@ export default function BookingScreen() {
         bookerTeam: mode === "SELECTED" ? bookerTeam : undefined,
       },
       {
-        onSuccess: (data) => {
-          Alert.alert("Booked!", `${pitch.venue.name} is confirmed.`, [
-            {
-              text: "View match",
-              onPress: () => router.replace(`/match/${data.match.id}`),
-            },
-          ]);
-        },
-        onError: (err: any) => {
-          const msg =
-            err?.response?.data?.message ?? err?.message ?? "Try again later.";
-          Alert.alert("Booking failed", msg);
-        },
+        onSuccess: (data) => router.replace(`/match/${data.match.id}`),
+        onError: (err) => setErrorMessage(bookingErrorMessage(err)),
       },
     );
   }
@@ -135,13 +155,54 @@ export default function BookingScreen() {
         </Text>
 
         <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
-          Slot
+          Date
         </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-4 -mx-1 px-1"
+        >
+          {dates.map((d, i) => (
+            <PickerChip
+              key={d.toISOString()}
+              active={i === dateIndex}
+              onPress={() => {
+                setDateIndex(i);
+                setErrorMessage(null);
+              }}
+              label={d.toLocaleDateString([], { weekday: "short", day: "numeric" })}
+              accessibilityLabel={d.toLocaleDateString([], {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
+            />
+          ))}
+        </ScrollView>
+
+        <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
+          Kick-off
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-2 -mx-1 px-1"
+        >
+          {BOOKABLE_HOURS.map((h) => (
+            <PickerChip
+              key={h}
+              active={h === hour}
+              onPress={() => {
+                setHour(h);
+                setErrorMessage(null);
+              }}
+              label={`${String(h).padStart(2, "0")}:00`}
+            />
+          ))}
+        </ScrollView>
         <View className="mb-6 rounded-xl border border-joga-border bg-joga-card p-4">
-          <Text className="text-base font-semibold text-joga-text">{label}</Text>
-          <Text className="mt-1 text-xs text-joga-muted">
-            (defaults to the next hour for the MVP)
-          </Text>
+          <Text className="text-base font-semibold text-joga-text">{slotLabel}</Text>
+          <Text className="mt-1 text-xs text-joga-muted">1-hour slot</Text>
         </View>
 
         <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
@@ -201,14 +262,24 @@ export default function BookingScreen() {
           </>
         )}
 
+        {errorMessage && (
+          <View
+            className="mb-4 rounded-xl border border-joga-pink bg-joga-pink/10 p-4"
+            accessibilityRole="alert"
+          >
+            <Text className="text-sm font-semibold text-joga-pink">{errorMessage}</Text>
+          </View>
+        )}
+
         <Pressable
           onPress={handleSubmit}
           disabled={isPending}
-          className={`mt-4 items-center rounded-xl py-4 ${
+          className={`mt-2 min-h-[48px] items-center justify-center rounded-xl py-4 ${
             isPending ? "bg-joga-border" : "bg-joga-volt active:opacity-80"
           }`}
           accessibilityRole="button"
           accessibilityLabel="Confirm booking"
+          accessibilityState={{ disabled: isPending, busy: isPending }}
         >
           {isPending ? (
             <ActivityIndicator color={colors.volt} />
