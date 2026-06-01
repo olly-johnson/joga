@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -16,26 +15,62 @@ import { useCompleteMatch } from "@/hooks/use-complete-match";
 import { useMe } from "@/hooks/use-me";
 import type { MatchParticipant, Team } from "@/lib/types";
 import { colors } from "@/constants/Colors";
+import {
+  Badge,
+  Button,
+  Card,
+  ErrorState,
+  LoadingState,
+  SectionLabel,
+} from "@/components/ui";
+
+const HEADER_OPTIONS = {
+  headerShown: true,
+  headerStyle: { backgroundColor: colors.dark },
+  headerTintColor: colors.text,
+  headerTitleStyle: { fontFamily: "Inter_700Bold" },
+  headerShadowVisible: false,
+} as const;
 
 function ParticipantRow({ p }: { p: MatchParticipant }) {
   const name = p.user
     ? `${p.user.firstName} ${p.user.lastName}`.trim()
     : "Player";
   return (
-    <View className="flex-row items-center justify-between border-b border-joga-border/40 py-2">
-      <Text className="text-sm text-joga-text">{name}</Text>
-      {p.team ? (
-        <Text
-          className={`text-xs font-bold ${
-            p.team === "HOME" ? "text-joga-volt" : "text-joga-cyan"
-          }`}
-        >
-          {p.team}
+    <View className="flex-row items-center justify-between border-b border-joga-hairline py-2.5">
+      <Text className="font-body text-sm text-joga-text" numberOfLines={1}>
+        {name}
+      </Text>
+    </View>
+  );
+}
+
+function TeamColumn({
+  label,
+  accent,
+  participants,
+}: {
+  label: string;
+  accent: "volt" | "cyan";
+  participants: MatchParticipant[];
+}) {
+  return (
+    <Card className="flex-1 p-4">
+      <Text
+        className={`mb-2 font-semibold text-xs uppercase tracking-wide ${
+          accent === "volt" ? "text-joga-volt" : "text-joga-cyan"
+        }`}
+      >
+        {label} ({participants.length})
+      </Text>
+      {participants.length === 0 ? (
+        <Text className="font-body text-xs italic text-joga-muted">
+          No players yet
         </Text>
       ) : (
-        <Text className="text-xs italic text-joga-muted">pending</Text>
+        participants.map((p) => <ParticipantRow key={p.id} p={p} />)
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -52,16 +87,12 @@ export default function MatchDetailScreen() {
   if (isLoading || !match) {
     return (
       <SafeAreaView className="flex-1 bg-joga-dark" edges={["top"]}>
-        <Stack.Screen options={{ headerShown: true, title: "Match" }} />
-        <View className="flex-1 items-center justify-center">
-          {error ? (
-            <Text className="px-8 text-center text-joga-muted">
-              Could not load match.
-            </Text>
-          ) : (
-            <ActivityIndicator color={colors.volt} />
-          )}
-        </View>
+        <Stack.Screen options={{ ...HEADER_OPTIONS, title: "Match" }} />
+        {error ? (
+          <ErrorState message="Could not load this match." />
+        ) : (
+          <LoadingState />
+        )}
       </SafeAreaView>
     );
   }
@@ -73,16 +104,17 @@ export default function MatchDetailScreen() {
   const awayParticipants = match.participants.filter((p) => p.team === "AWAY");
   const unassigned = match.participants.filter((p) => p.team === null);
   const allAssigned = unassigned.length === 0 && match.participants.length > 0;
-  const teamsReady = allAssigned && homeParticipants.length > 0 && awayParticipants.length > 0;
+  const teamsReady =
+    allAssigned && homeParticipants.length > 0 && awayParticipants.length > 0;
 
   function handleJoin(team?: Team) {
     join.mutate(
       { team },
       {
-        onSuccess: () => Alert.alert("Joined", team ? `You're on ${team}.` : "You're in."),
+        onSuccess: () =>
+          Alert.alert("Joined", team ? `You are on ${team}.` : "You are in."),
         onError: (err: any) => {
-          const msg =
-            err?.response?.data?.message ?? err?.message ?? "Try again.";
+          const msg = err?.response?.data?.message ?? err?.message ?? "Try again.";
           Alert.alert("Join failed", msg);
         },
       },
@@ -101,8 +133,7 @@ export default function MatchDetailScreen() {
       {
         onSuccess: () => Alert.alert("Result submitted", "Ratings updated."),
         onError: (err: any) => {
-          const msg =
-            err?.response?.data?.message ?? err?.message ?? "Try again.";
+          const msg = err?.response?.data?.message ?? err?.message ?? "Try again.";
           Alert.alert("Could not submit result", msg);
         },
       },
@@ -114,142 +145,133 @@ export default function MatchDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-joga-dark" edges={["top"]}>
-      <Stack.Screen options={{ headerShown: true, title: "Match" }} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
-        <Text className="mb-1 text-3xl font-extrabold text-joga-text">
-          {match.pitch.venue.name}
-        </Text>
-        <Text className="mb-4 text-sm text-joga-muted">
-          {match.matchType} · {match.teamSelectionMode} · {match.participants.length}/
-          {match.capacity}
-        </Text>
-
-        <View className="mb-4 flex-row items-center gap-2">
-          <View
-            className={`rounded-full px-3 py-1 ${
-              isCompleted
-                ? "bg-joga-pink/20"
-                : match.status === "BOOKED"
-                  ? "bg-joga-volt/20"
-                  : "bg-joga-border"
-            }`}
-          >
-            <Text
-              className={`text-xs font-bold ${
+      <Stack.Screen options={{ ...HEADER_OPTIONS, title: "Match" }} />
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48 }}>
+        {/* Hero */}
+        <Card className="mb-6 p-6">
+          <Text className="font-heading text-2xl tracking-tight text-joga-text">
+            {match.pitch.venue.name}
+          </Text>
+          <View className="mt-3 flex-row flex-wrap items-center gap-2">
+            <Badge
+              label={match.matchType === "RANKED" ? "Ranked" : "Friendly"}
+              tone={match.matchType === "RANKED" ? "primary" : "neutral"}
+            />
+            <Badge
+              label={
                 isCompleted
-                  ? "text-joga-pink"
+                  ? "Completed"
                   : match.status === "BOOKED"
-                    ? "text-joga-volt"
-                    : "text-joga-text"
-              }`}
-            >
-              {match.status}
-            </Text>
+                    ? "Booked"
+                    : "Open"
+              }
+              tone={isCompleted ? "neutral" : "primary"}
+            />
+            <Badge
+              label={`${match.participants.length}/${match.capacity} players`}
+              tone="outline"
+            />
           </View>
-        </View>
 
-        {isCompleted && (
-          <View className="mb-6 rounded-2xl border border-joga-border bg-joga-card p-4">
-            <Text className="mb-1 text-xs uppercase tracking-wider text-joga-muted">
-              Final score
-            </Text>
-            <Text className="text-4xl font-extrabold text-joga-text">
-              {match.homeScore} – {match.awayScore}
-            </Text>
-          </View>
-        )}
+          {isCompleted && (
+            <View className="mt-6 flex-row items-center justify-center gap-6">
+              <View className="items-center">
+                <Text className="font-display text-5xl tracking-tight text-joga-text">
+                  {match.homeScore}
+                </Text>
+                <Text className="mt-1 font-semibold text-xs uppercase tracking-wide text-joga-volt">
+                  Home
+                </Text>
+              </View>
+              <Text className="font-heading text-2xl text-joga-muted">-</Text>
+              <View className="items-center">
+                <Text className="font-display text-5xl tracking-tight text-joga-text">
+                  {match.awayScore}
+                </Text>
+                <Text className="mt-1 font-semibold text-xs uppercase tracking-wide text-joga-cyan">
+                  Away
+                </Text>
+              </View>
+            </View>
+          )}
+        </Card>
 
+        {/* Teams */}
+        <SectionLabel>Teams</SectionLabel>
         <View className="mb-6 flex-row gap-3">
-          <View className="flex-1 rounded-2xl border border-joga-border bg-joga-card p-3">
-            <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-volt">
-              Home ({homeParticipants.length})
-            </Text>
-            {homeParticipants.length === 0 ? (
-              <Text className="text-xs italic text-joga-muted">No players yet</Text>
-            ) : (
-              homeParticipants.map((p) => <ParticipantRow key={p.id} p={p} />)
-            )}
-          </View>
-          <View className="flex-1 rounded-2xl border border-joga-border bg-joga-card p-3">
-            <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-cyan">
-              Away ({awayParticipants.length})
-            </Text>
-            {awayParticipants.length === 0 ? (
-              <Text className="text-xs italic text-joga-muted">No players yet</Text>
-            ) : (
-              awayParticipants.map((p) => <ParticipantRow key={p.id} p={p} />)
-            )}
-          </View>
+          <TeamColumn label="Home" accent="volt" participants={homeParticipants} />
+          <TeamColumn label="Away" accent="cyan" participants={awayParticipants} />
         </View>
 
         {unassigned.length > 0 && (
-          <View className="mb-6 rounded-2xl border border-joga-border bg-joga-card p-3">
-            <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
-              Pending team assignment ({unassigned.length})
+          <Card className="mb-6 p-4">
+            <Text className="mb-2 font-semibold text-xs uppercase tracking-wide text-joga-muted">
+              Awaiting team assignment ({unassigned.length})
             </Text>
-            {unassigned.map((p) => <ParticipantRow key={p.id} p={p} />)}
-            <Text className="mt-2 text-xs italic text-joga-muted">
-              Teams are randomised when the roster fills.
+            {unassigned.map((p) => (
+              <ParticipantRow key={p.id} p={p} />
+            ))}
+            <Text className="mt-2 font-body text-xs italic text-joga-muted">
+              Teams are assigned at random once the roster fills.
             </Text>
-          </View>
+          </Card>
         )}
 
+        {/* Join */}
         {canJoin && match.teamSelectionMode === "SELECTED" && (
           <>
-            <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
-              Join a team
-            </Text>
-            <View className="mb-4 flex-row gap-3">
+            <SectionLabel>Join a team</SectionLabel>
+            <View className="mb-6 flex-row gap-3">
               <Pressable
                 onPress={() => handleJoin("HOME")}
                 disabled={join.isPending}
-                className="flex-1 items-center rounded-xl border border-joga-volt bg-joga-volt/10 py-3 active:opacity-80"
+                className="min-h-[50px] flex-1 items-center justify-center rounded-2xl border border-joga-volt/50 bg-joga-volt/10 active:opacity-80"
                 accessibilityRole="button"
               >
-                <Text className="text-sm font-bold text-joga-volt">Join HOME</Text>
+                <Text className="font-heading text-base tracking-tight text-joga-volt">
+                  Join Home
+                </Text>
               </Pressable>
               <Pressable
                 onPress={() => handleJoin("AWAY")}
                 disabled={join.isPending}
-                className="flex-1 items-center rounded-xl border border-joga-cyan bg-joga-cyan/10 py-3 active:opacity-80"
+                className="min-h-[50px] flex-1 items-center justify-center rounded-2xl border border-joga-cyan/50 bg-joga-cyan/10 active:opacity-80"
                 accessibilityRole="button"
               >
-                <Text className="text-sm font-bold text-joga-cyan">Join AWAY</Text>
+                <Text className="font-heading text-base tracking-tight text-joga-cyan">
+                  Join Away
+                </Text>
               </Pressable>
             </View>
           </>
         )}
 
         {canJoin && match.teamSelectionMode === "RANDOM" && (
-          <Pressable
-            onPress={() => handleJoin()}
-            disabled={join.isPending}
-            className="mb-4 items-center rounded-xl bg-joga-volt py-3.5 active:opacity-80"
-            accessibilityRole="button"
-          >
-            {join.isPending ? (
-              <ActivityIndicator color={colors.black} />
-            ) : (
-              <Text className="text-base font-bold text-joga-black">
-                Join match (random team)
-              </Text>
-            )}
-          </Pressable>
+          <View className="mb-6">
+            <Button
+              label="Join match"
+              icon="user-plus"
+              loading={join.isPending}
+              onPress={() => handleJoin()}
+            />
+            <Text className="mt-2 text-center font-body text-xs text-joga-muted">
+              You will be assigned a team at random.
+            </Text>
+          </View>
         )}
 
+        {/* Submit result */}
         {meParticipant && !isCompleted && (
           <>
-            <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
-              Submit result
-            </Text>
+            <SectionLabel>Submit result</SectionLabel>
             {!teamsReady && (
-              <Text className="mb-2 text-xs italic text-joga-muted">
-                Need at least 1 player on each team before submitting.
+              <Text className="mb-3 font-body text-xs italic text-joga-muted">
+                Need at least one player on each team before submitting.
               </Text>
             )}
             <View className="mb-3 flex-row gap-3">
-              <View className="flex-1 rounded-xl border border-joga-border bg-joga-card p-3">
-                <Text className="mb-1 text-xs uppercase tracking-wider text-joga-volt">
+              <View className="flex-1 rounded-2xl border border-joga-hairline bg-joga-card p-4">
+                <Text className="mb-1 font-semibold text-xs uppercase tracking-wide text-joga-volt">
                   Home
                 </Text>
                 <TextInput
@@ -258,12 +280,12 @@ export default function MatchDetailScreen() {
                   keyboardType="number-pad"
                   placeholder="0"
                   placeholderTextColor={colors.muted}
-                  className="text-3xl font-extrabold text-joga-text"
+                  className="font-display text-3xl text-joga-text"
                   accessibilityLabel="Home score"
                 />
               </View>
-              <View className="flex-1 rounded-xl border border-joga-border bg-joga-card p-3">
-                <Text className="mb-1 text-xs uppercase tracking-wider text-joga-cyan">
+              <View className="flex-1 rounded-2xl border border-joga-hairline bg-joga-card p-4">
+                <Text className="mb-1 font-semibold text-xs uppercase tracking-wide text-joga-cyan">
                   Away
                 </Text>
                 <TextInput
@@ -272,30 +294,18 @@ export default function MatchDetailScreen() {
                   keyboardType="number-pad"
                   placeholder="0"
                   placeholderTextColor={colors.muted}
-                  className="text-3xl font-extrabold text-joga-text"
+                  className="font-display text-3xl text-joga-text"
                   accessibilityLabel="Away score"
                 />
               </View>
             </View>
-            <Pressable
+            <Button
+              label="Submit result"
+              loading={complete.isPending}
+              disabled={!teamsReady}
               onPress={handleComplete}
-              disabled={complete.isPending || !teamsReady}
-              className={`items-center rounded-xl py-4 ${
-                complete.isPending || !teamsReady
-                  ? "bg-joga-border"
-                  : "bg-joga-pink active:opacity-80"
-              }`}
-              accessibilityRole="button"
               accessibilityLabel="Submit result"
-            >
-              {complete.isPending ? (
-                <ActivityIndicator color={colors.text} />
-              ) : (
-                <Text className="text-base font-bold text-joga-text">
-                  Submit result
-                </Text>
-              )}
-            </Pressable>
+            />
           </>
         )}
       </ScrollView>

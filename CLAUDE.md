@@ -208,19 +208,29 @@ The mobile app lives in `apps/mobile/` using Expo SDK 54, Expo Router v6 (file-b
 
 **Styling:** All styles via NativeWind utility classes — no raw `StyleSheet.create()` in new code. Theme tokens are defined in `tailwind.config.js` under `theme.extend.colors.joga` and mirrored in `constants/Colors.ts` for non-Tailwind contexts (navigation theme, StatusBar).
 
+**Design direction (refined dark):** the UI follows a "fintech-grade" take on the street-football brand. Restraint is the rule: **volt is the single primary accent** (CTAs, selected state, branding), **pink is reserved for destructive / live state**, and **cyan is used only for the away team**. Everything else is the neutral ramp. Avoid emojis, em/en dashes, and casual phrasing in shipped copy (guarded by `__tests__/no-emoji.test.ts`).
+
+**Shared UI kit (`components/ui/`):** build screens from these primitives rather than re-styling inline — `Screen`/`ScreenHeader`/`SectionLabel`, `Card`/`PressableCard`, `Button` (primary/secondary/ghost/danger), `Badge`, `SegmentedControl`, `Avatar` (initials), `StatHero` (the "balance" card), `ListRow`, `Icon` (Feather line icons, standardised), and `LoadingState`/`ErrorState`/`EmptyState`. Exported from `components/ui/index.ts`.
+
+**Typography:** Inter is loaded via `@expo-google-fonts/inter` in `app/_layout.tsx`. Use the semantic font classes (`font-display`, `font-heading`, `font-semibold`, `font-medium`, `font-body`) — each maps to a specific Inter cut, so the family carries the weight; prefer them over `font-bold`.
+
 **UI Color Palette:**
 
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `joga-black` | `#0A0A0A` | True black for text-on-accent, tab bar bg |
-| `joga-dark` | `#121212` | Screen backgrounds |
-| `joga-card` | `#1A1A1A` | Card/container backgrounds |
-| `joga-border` | `#2A2A2A` | Card borders, dividers |
-| `joga-muted` | `#6B6B6B` | Secondary text, inactive icons |
-| `joga-text` | `#F5F5F5` | Primary text |
-| `joga-volt` | `#CCFF00` | Primary accent — CTAs, selected states, branding |
-| `joga-pink` | `#FF2D78` | Secondary accent — alerts, live indicators |
-| `joga-cyan` | `#00F0FF` | Tertiary accent — surface badges, data highlights |
+| `joga-black` | `#060608` | True black for text-on-accent, tab bar bg |
+| `joga-dark` | `#0B0B0D` | Screen backgrounds |
+| `joga-card` | `#141417` | Card/container backgrounds |
+| `joga-elevated` | `#1C1C20` | Raised surfaces: inputs, segmented control, chips |
+| `joga-hairline` | `#212126` | Faint dividers |
+| `joga-border` | `#2A2A30` | Card borders, stronger dividers |
+| `joga-muted` | `#8C8C94` | Secondary text (AA on dark), inactive icons |
+| `joga-text2` | `#B4B4BC` | Secondary-emphasis text |
+| `joga-text` | `#F4F4F5` | Primary text |
+| `joga-volt` | `#CCFF00` | Primary accent: CTAs, selected state, branding |
+| `joga-pink` | `#FF3D71` | Destructive / live state only |
+| `joga-cyan` | `#00F0FF` | Away team only |
+| `joga-onaccent` | `#0A0A0A` | Text/icon on a volt surface |
 
 **Screenshots:** Run `pnpm exec tsx scripts/capture-screenshots.ts` to capture web-rendered screenshots of all screens via Playwright. Output in `screenshots/`.
 

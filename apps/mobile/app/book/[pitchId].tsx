@@ -1,11 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useVenues } from "@/hooks/use-venues";
@@ -18,42 +12,25 @@ import {
 } from "@/lib/booking-slots";
 import type { Team, TeamSelectionMode } from "@/lib/types";
 import { colors } from "@/constants/Colors";
+import {
+  Button,
+  Card,
+  Icon,
+  LoadingState,
+  SectionLabel,
+  SegmentedControl,
+} from "@/components/ui";
 
 const BOOKABLE_HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
 
-function ChoiceChip({
-  active,
-  onPress,
-  label,
-  disabled = false,
-}: {
-  active: boolean;
-  onPress: () => void;
-  label: string;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      className={`min-h-[44px] flex-1 items-center justify-center rounded-xl border px-4 py-3 ${
-        active
-          ? "border-joga-volt bg-joga-volt/10"
-          : "border-joga-border bg-joga-card"
-      } ${disabled ? "opacity-40" : "active:opacity-80"}`}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active, disabled }}
-    >
-      <Text
-        className={`text-sm font-bold ${active ? "text-joga-volt" : "text-joga-text"}`}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
+const HEADER_OPTIONS = {
+  headerStyle: { backgroundColor: colors.dark },
+  headerTintColor: colors.text,
+  headerTitleStyle: { fontFamily: "Inter_700Bold" },
+  headerShadowVisible: false,
+} as const;
 
-function PickerChip({
+function Pill({
   active,
   onPress,
   label,
@@ -67,17 +44,17 @@ function PickerChip({
   return (
     <Pressable
       onPress={onPress}
-      className={`mr-2 min-h-[44px] items-center justify-center rounded-xl border px-4 py-3 ${
-        active
-          ? "border-joga-volt bg-joga-volt/10"
-          : "border-joga-border bg-joga-card"
+      className={`mr-2 min-h-[44px] items-center justify-center rounded-2xl border px-4 ${
+        active ? "border-joga-volt bg-joga-volt" : "border-joga-hairline bg-joga-card"
       } active:opacity-80`}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       accessibilityLabel={accessibilityLabel ?? label}
     >
       <Text
-        className={`text-sm font-bold ${active ? "text-joga-volt" : "text-joga-text"}`}
+        className={`font-semibold text-sm ${
+          active ? "text-joga-onaccent" : "text-joga-text"
+        }`}
       >
         {label}
       </Text>
@@ -143,35 +120,31 @@ export default function BookingScreen() {
   if (!pitch) {
     return (
       <SafeAreaView className="flex-1 bg-joga-dark" edges={["top"]}>
-        <Stack.Screen options={{ headerShown: true, title: "Book pitch" }} />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.volt} />
-        </View>
+        <Stack.Screen options={{ ...HEADER_OPTIONS, title: "Book pitch" }} />
+        <LoadingState />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView className="flex-1 bg-joga-dark" edges={["top"]}>
-      <Stack.Screen options={{ title: "Book pitch" }} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
-        <Text className="mb-1 text-3xl font-extrabold text-joga-text">
+      <Stack.Screen options={{ ...HEADER_OPTIONS, title: "Book pitch" }} />
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48 }}>
+        <Text className="font-heading text-2xl tracking-tight text-joga-text">
           {pitch.venue.name}
         </Text>
-        <Text className="mb-6 text-sm text-joga-muted">
+        <Text className="mb-6 mt-1 font-body text-sm text-joga-muted">
           {pitch.type === "FIVE_A_SIDE" ? "5-a-side" : "7-a-side"} · {pitch.surface}
         </Text>
 
-        <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
-          Date
-        </Text>
+        <SectionLabel>Date</SectionLabel>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="mb-4 -mx-1 px-1"
+          className="mb-6 -mx-1 px-1"
         >
           {dates.map((d, i) => (
-            <PickerChip
+            <Pill
               key={d.toISOString()}
               active={i === dateIndex}
               onPress={() => {
@@ -188,16 +161,14 @@ export default function BookingScreen() {
           ))}
         </ScrollView>
 
-        <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
-          Kick-off
-        </Text>
+        <SectionLabel>Kick-off</SectionLabel>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="mb-2 -mx-1 px-1"
+          className="mb-6 -mx-1 px-1"
         >
           {BOOKABLE_HOURS.map((h) => (
-            <PickerChip
+            <Pill
               key={h}
               active={h === hour}
               onPress={() => {
@@ -208,95 +179,84 @@ export default function BookingScreen() {
             />
           ))}
         </ScrollView>
-        <View className="mb-6 rounded-xl border border-joga-border bg-joga-card p-4">
-          <Text className="text-base font-semibold text-joga-text">{slotLabel}</Text>
-          <Text className="mt-1 text-xs text-joga-muted">1-hour slot</Text>
-        </View>
 
-        <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
-          Match type
-        </Text>
-        <View className="mb-6 flex-row gap-3">
-          <ChoiceChip
-            label="Friendly"
-            active={matchType === "FRIENDLY"}
-            onPress={() => setMatchType("FRIENDLY")}
-          />
-          <ChoiceChip
-            label="Ranked"
-            active={matchType === "RANKED"}
-            onPress={() => setMatchType("RANKED")}
+        <SectionLabel>Match type</SectionLabel>
+        <View className="mb-6">
+          <SegmentedControl
+            value={matchType}
+            onChange={setMatchType}
+            options={[
+              { value: "FRIENDLY", label: "Friendly" },
+              { value: "RANKED", label: "Ranked" },
+            ]}
           />
         </View>
 
-        <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
-          Team selection
-        </Text>
-        <View className="mb-2 flex-row gap-3">
-          <ChoiceChip
-            label="Selected"
-            active={mode === "SELECTED"}
-            onPress={() => setMode("SELECTED")}
-          />
-          <ChoiceChip
-            label="Random"
-            active={mode === "RANDOM"}
-            onPress={() => setMode("RANDOM")}
+        <SectionLabel>Team selection</SectionLabel>
+        <View className="mb-2">
+          <SegmentedControl
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: "SELECTED", label: "Selected" },
+              { value: "RANDOM", label: "Random" },
+            ]}
           />
         </View>
-        <Text className="mb-6 text-xs text-joga-muted">
+        <Text className="mb-6 font-body text-xs leading-5 text-joga-muted">
           {mode === "SELECTED"
-            ? "Each joiner picks their team when they join."
-            : "Teams are picked at random when the roster fills up."}
+            ? "Each player picks their team when they join."
+            : "Teams are picked at random once the roster fills up."}
         </Text>
 
         {mode === "SELECTED" && (
           <>
-            <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-joga-muted">
-              Your team
-            </Text>
-            <View className="mb-6 flex-row gap-3">
-              <ChoiceChip
-                label="Home"
-                active={bookerTeam === "HOME"}
-                onPress={() => setBookerTeam("HOME")}
-              />
-              <ChoiceChip
-                label="Away"
-                active={bookerTeam === "AWAY"}
-                onPress={() => setBookerTeam("AWAY")}
+            <SectionLabel>Your team</SectionLabel>
+            <View className="mb-6">
+              <SegmentedControl
+                value={bookerTeam}
+                onChange={setBookerTeam}
+                options={[
+                  { value: "HOME", label: "Home" },
+                  { value: "AWAY", label: "Away" },
+                ]}
               />
             </View>
           </>
         )}
 
+        <Card className="mb-6 p-5">
+          <View className="flex-row items-center justify-between">
+            <Text className="font-body text-sm text-joga-muted">Slot</Text>
+            <Text className="font-semibold text-sm text-joga-text">{slotLabel}</Text>
+          </View>
+          <View className="my-3 h-px bg-joga-hairline" />
+          <View className="flex-row items-center justify-between">
+            <Text className="font-body text-sm text-joga-muted">Total</Text>
+            <Text className="font-heading text-xl tracking-tight text-joga-volt">
+              £45.00
+            </Text>
+          </View>
+        </Card>
+
         {errorMessage && (
           <View
-            className="mb-4 rounded-xl border border-joga-pink bg-joga-pink/10 p-4"
+            className="mb-4 flex-row items-center gap-2 rounded-2xl border border-joga-pink/40 bg-joga-pink/10 px-4 py-3"
             accessibilityRole="alert"
           >
-            <Text className="text-sm font-semibold text-joga-pink">{errorMessage}</Text>
+            <Icon name="alert-circle" size={16} color={colors.pink} />
+            <Text className="flex-1 font-body text-sm text-joga-pink">
+              {errorMessage}
+            </Text>
           </View>
         )}
 
-        <Pressable
+        <Button
+          label="Confirm booking"
+          loading={isPending}
           onPress={handleSubmit}
-          disabled={isPending}
-          className={`mt-2 min-h-[48px] items-center justify-center rounded-xl py-4 ${
-            isPending ? "bg-joga-border" : "bg-joga-volt active:opacity-80"
-          }`}
-          accessibilityRole="button"
           accessibilityLabel="Confirm booking"
-          accessibilityState={{ disabled: isPending, busy: isPending }}
-        >
-          {isPending ? (
-            <ActivityIndicator color={colors.volt} />
-          ) : (
-            <Text className="text-base font-bold text-joga-black">
-              Confirm booking (£45.00 mocked)
-            </Text>
-          )}
-        </Pressable>
+        />
       </ScrollView>
     </SafeAreaView>
   );
