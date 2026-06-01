@@ -1,32 +1,33 @@
 /**
  * Joga design tokens (single source of truth).
  *
- * Direction: refined dark. One primary accent (volt) carries CTAs and active
- * state; everything else is a restrained neutral ramp. Pink is reserved for
- * destructive / live state, cyan only for the away team. Values are tuned so
- * secondary text clears WCAG AA on the near-black background.
+ * Matched to the reference banking app: a warm charcoal base (not pure black),
+ * raised charcoal surfaces, a soft lime accent, and white. Sampled directly
+ * from the reference palette swatches (#2F2F2F / #3F3F3F / #C9F259 / #FFFFFF).
  *
+ * Lime is the single primary accent (CTAs, selected state, branding). White is
+ * used for high-emphasis pills/cards. Pink is reserved for destructive state.
  * Mirrored in tailwind.config.js under theme.extend.colors.joga.
  */
 export const colors = {
-  // Neutral ramp (dark -> light)
-  black: "#060608", // true black: tab bar, text-on-accent surfaces
-  dark: "#0B0B0D", // app background
-  card: "#141417", // card / container surface
-  elevated: "#1C1C20", // raised surface: inputs, segmented control, chips
-  hairline: "#212126", // faint dividers
-  border: "#2A2A30", // card borders, stronger dividers
+  // Neutral ramp (dark -> light), warm charcoal family
+  black: "#161618", // deepest: behind sheets, on-accent alt
+  dark: "#262628", // app background
+  card: "#2F2F33", // card / container surface (reference #2F2F2F)
+  elevated: "#3A3A3F", // raised surface: inputs, segmented track, chips (#3F3F3F)
+  hairline: "#363639", // faint dividers
+  border: "#45454B", // card borders, stronger dividers
 
   // Text
-  muted: "#8C8C94", // secondary text (AA on dark), inactive icons
-  text2: "#B4B4BC", // secondary-emphasis text
-  text: "#F4F4F5", // primary text
+  muted: "#9C9CA2", // secondary text (AA on charcoal), inactive icons
+  text2: "#CACAD0", // secondary-emphasis text
+  text: "#F7F7F8", // primary text
 
   // Accents
-  volt: "#CCFF00", // primary: CTAs, selected state, branding
-  pink: "#FF3D71", // destructive / live only
-  cyan: "#00F0FF", // away team only
-  onAccent: "#0A0A0A", // text/icon on a volt surface
+  white: "#FFFFFF", // high-emphasis pills / cards
+  volt: "#C9F259", // primary accent: CTAs, selected state, branding (lime)
+  pink: "#FF6B6B", // destructive state only
+  onAccent: "#18181A", // text/icon on a lime or white surface
 } as const;
 
 export default {

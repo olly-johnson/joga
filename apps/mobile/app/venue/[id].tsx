@@ -17,7 +17,7 @@ const HEADER_OPTIONS = {
   headerShown: true,
   headerStyle: { backgroundColor: colors.dark },
   headerTintColor: colors.text,
-  headerTitleStyle: { fontFamily: "Inter_700Bold" },
+  headerTitleStyle: { fontFamily: "SpaceGrotesk_700Bold" },
   headerShadowVisible: false,
 } as const;
 
@@ -66,12 +66,12 @@ function StatusCell({
     return (
       <Pressable
         onPress={() => match && onOpen(match.id)}
-        className={`${base} border-joga-cyan/40 bg-joga-cyan/10 active:opacity-80`}
+        className={`${base} border-joga-white/30 bg-joga-white/10 active:opacity-80`}
         accessibilityRole="button"
         accessibilityLabel={`Join ${pitch.surface} at ${hh(hour)}`}
       >
-        <Text className="font-semibold text-xs text-joga-cyan">{pitch.surface}</Text>
-        <Text className="mt-0.5 font-medium text-[10px] uppercase tracking-wide text-joga-cyan">
+        <Text className="font-semibold text-xs text-joga-white">{pitch.surface}</Text>
+        <Text className="mt-0.5 font-medium text-[10px] uppercase tracking-wide text-joga-white">
           Join {count}/{cap}
         </Text>
       </Pressable>
@@ -195,7 +195,7 @@ export default function VenueScreen() {
         <SectionLabel>Slots</SectionLabel>
         <View className="mb-4 flex-row flex-wrap gap-x-4 gap-y-2">
           <LegendDot color={colors.volt} label="Free to book" />
-          <LegendDot color={colors.cyan} label="Open to join" />
+          <LegendDot color={colors.white} label="Open to join" />
           <LegendDot color={colors.muted} label="Full" />
         </View>
 

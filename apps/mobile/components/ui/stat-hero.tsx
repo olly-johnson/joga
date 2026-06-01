@@ -31,7 +31,7 @@ export function StatHero({
         )}
       </View>
 
-      <Text className="mt-3 font-display text-6xl tracking-tight text-joga-volt">
+      <Text className="mt-3 font-display text-6xl tracking-tight text-joga-text">
         {value}
       </Text>
 

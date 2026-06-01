@@ -28,7 +28,7 @@ const HEADER_OPTIONS = {
   headerShown: true,
   headerStyle: { backgroundColor: colors.dark },
   headerTintColor: colors.text,
-  headerTitleStyle: { fontFamily: "Inter_700Bold" },
+  headerTitleStyle: { fontFamily: "SpaceGrotesk_700Bold" },
   headerShadowVisible: false,
 } as const;
 
@@ -51,14 +51,14 @@ function TeamColumn({
   participants,
 }: {
   label: string;
-  accent: "volt" | "cyan";
+  accent: "volt" | "white";
   participants: MatchParticipant[];
 }) {
   return (
     <Card className="flex-1 p-4">
       <Text
         className={`mb-2 font-semibold text-xs uppercase tracking-wide ${
-          accent === "volt" ? "text-joga-volt" : "text-joga-cyan"
+          accent === "volt" ? "text-joga-volt" : "text-joga-text"
         }`}
       >
         {label} ({participants.length})
@@ -188,7 +188,7 @@ export default function MatchDetailScreen() {
                 <Text className="font-display text-5xl tracking-tight text-joga-text">
                   {match.awayScore}
                 </Text>
-                <Text className="mt-1 font-semibold text-xs uppercase tracking-wide text-joga-cyan">
+                <Text className="mt-1 font-semibold text-xs uppercase tracking-wide text-joga-white">
                   Away
                 </Text>
               </View>
@@ -200,7 +200,7 @@ export default function MatchDetailScreen() {
         <SectionLabel>Teams</SectionLabel>
         <View className="mb-6 flex-row gap-3">
           <TeamColumn label="Home" accent="volt" participants={homeParticipants} />
-          <TeamColumn label="Away" accent="cyan" participants={awayParticipants} />
+          <TeamColumn label="Away" accent="white" participants={awayParticipants} />
         </View>
 
         {unassigned.length > 0 && (
@@ -235,10 +235,10 @@ export default function MatchDetailScreen() {
               <Pressable
                 onPress={() => handleJoin("AWAY")}
                 disabled={join.isPending}
-                className="min-h-[50px] flex-1 items-center justify-center rounded-2xl border border-joga-cyan/50 bg-joga-cyan/10 active:opacity-80"
+                className="min-h-[50px] flex-1 items-center justify-center rounded-2xl border border-joga-white/40 bg-joga-white/10 active:opacity-80"
                 accessibilityRole="button"
               >
-                <Text className="font-heading text-base tracking-tight text-joga-cyan">
+                <Text className="font-heading text-base tracking-tight text-joga-white">
                   Join Away
                 </Text>
               </Pressable>
@@ -285,7 +285,7 @@ export default function MatchDetailScreen() {
                 />
               </View>
               <View className="flex-1 rounded-2xl border border-joga-hairline bg-joga-card p-4">
-                <Text className="mb-1 font-semibold text-xs uppercase tracking-wide text-joga-cyan">
+                <Text className="mb-1 font-semibold text-xs uppercase tracking-wide text-joga-white">
                   Away
                 </Text>
                 <TextInput

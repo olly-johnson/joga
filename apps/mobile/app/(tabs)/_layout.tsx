@@ -25,7 +25,7 @@ export default function TabLayout() {
           paddingTop: 10,
         },
         tabBarLabelStyle: {
-          fontFamily: "Inter_600SemiBold",
+          fontFamily: "SpaceGrotesk_600SemiBold",
           fontSize: 11,
           marginTop: 4,
         },

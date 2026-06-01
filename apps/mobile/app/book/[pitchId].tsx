@@ -26,7 +26,7 @@ const BOOKABLE_HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
 const HEADER_OPTIONS = {
   headerStyle: { backgroundColor: colors.dark },
   headerTintColor: colors.text,
-  headerTitleStyle: { fontFamily: "Inter_700Bold" },
+  headerTitleStyle: { fontFamily: "SpaceGrotesk_700Bold" },
   headerShadowVisible: false,
 } as const;
 

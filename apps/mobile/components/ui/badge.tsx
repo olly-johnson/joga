@@ -1,11 +1,11 @@
 import { Text, View } from "react-native";
 
-type Tone = "neutral" | "primary" | "cyan" | "pink" | "outline";
+type Tone = "neutral" | "primary" | "white" | "pink" | "outline";
 
 const CONTAINER: Record<Tone, string> = {
   neutral: "bg-joga-elevated",
   primary: "bg-joga-volt/15",
-  cyan: "bg-joga-cyan/15",
+  white: "bg-joga-white/15",
   pink: "bg-joga-pink/15",
   outline: "border border-joga-border",
 };
@@ -13,14 +13,15 @@ const CONTAINER: Record<Tone, string> = {
 const LABEL: Record<Tone, string> = {
   neutral: "text-joga-muted",
   primary: "text-joga-volt",
-  cyan: "text-joga-cyan",
+  white: "text-joga-text",
   pink: "text-joga-pink",
   outline: "text-joga-muted",
 };
 
 /**
  * Compact status / metadata pill. Tone maps to the restrained accent system:
- * primary = volt, cyan = away team, pink = live/destructive, neutral otherwise.
+ * primary = lime (home/active), white = away team, pink = destructive,
+ * neutral otherwise.
  */
 export function Badge({
   label,

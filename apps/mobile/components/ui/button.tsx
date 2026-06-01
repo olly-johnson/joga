@@ -2,18 +2,20 @@ import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { colors } from "@/constants/Colors";
 import { Icon, type IconName } from "./icon";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "white" | "secondary" | "ghost" | "danger";
 type Size = "md" | "lg";
 
 const CONTAINER: Record<Variant, string> = {
   primary: "bg-joga-volt active:opacity-90",
-  secondary: "bg-joga-elevated border border-joga-border active:opacity-80",
+  white: "bg-joga-white active:opacity-90",
+  secondary: "bg-joga-elevated active:opacity-80",
   ghost: "bg-transparent active:opacity-60",
-  danger: "bg-transparent border border-joga-border active:opacity-70",
+  danger: "bg-joga-elevated active:opacity-70",
 };
 
 const LABEL: Record<Variant, string> = {
   primary: "text-joga-onaccent",
+  white: "text-joga-onaccent",
   secondary: "text-joga-text",
   ghost: "text-joga-text",
   danger: "text-joga-pink",
@@ -21,14 +23,15 @@ const LABEL: Record<Variant, string> = {
 
 const SPINNER: Record<Variant, string> = {
   primary: colors.onAccent,
+  white: colors.onAccent,
   secondary: colors.text,
   ghost: colors.text,
   danger: colors.pink,
 };
 
 const HEIGHT: Record<Size, string> = {
-  md: "min-h-[50px] py-3.5",
-  lg: "min-h-[56px] py-4",
+  md: "min-h-[52px] py-3.5",
+  lg: "min-h-[58px] py-4",
 };
 
 export function Button({
@@ -62,9 +65,9 @@ export function Button({
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       className={[
-        "flex-row items-center justify-center rounded-2xl px-5",
+        "flex-row items-center justify-center rounded-full px-6",
         HEIGHT[size],
-        isDisabled ? "bg-joga-elevated border border-joga-border" : CONTAINER[variant],
+        isDisabled ? "bg-joga-elevated opacity-60" : CONTAINER[variant],
         fullWidth ? "w-full" : "self-start",
       ].join(" ")}
     >
@@ -81,7 +84,7 @@ export function Button({
           )}
           <Text
             className={[
-              "font-heading text-base tracking-tight",
+              "font-semibold text-base",
               isDisabled ? "text-joga-muted" : LABEL[variant],
             ].join(" ")}
           >
