@@ -420,4 +420,98 @@ describe("API (e2e)", () => {
       expect(res.status).toBe(409);
     });
   });
+
+  describe("GET /users/me/matches", () => {
+    async function seedPitchId(name: string) {
+      const venue = await prisma.venue.create({
+        data: {
+          name,
+          latitude: 51.5,
+          longitude: -0.1,
+          pitches: { create: [{ type: "FIVE_A_SIDE", surface: "3G" }] },
+        },
+        include: { pitches: true },
+      });
+      return venue.pitches[0].id;
+    }
+
+    it("rejects unauthenticated requests", async () => {
+      const res = await request(app.getHttpServer()).get("/users/me/matches");
+      expect(res.status).toBe(401);
+    });
+
+    it("returns an empty array for a user in no matches", async () => {
+      await prisma.user.create({
+        data: { clerkId: "mm-empty", email: "mme@example.com", firstName: "E", lastName: "E" },
+      });
+      const res = await request(app.getHttpServer())
+        .get("/users/me/matches")
+        .set("Authorization", `Bearer ${signTestToken("mm-empty")}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([]);
+    });
+
+    it("returns matches the user booked and matches they joined, including completed ones", async () => {
+      const pitchId = await seedPitchId("My Matches Arena");
+      await prisma.user.create({
+        data: { clerkId: "mm-booker", email: "mmb@example.com", firstName: "B", lastName: "B" },
+      });
+      await prisma.user.create({
+        data: { clerkId: "mm-joiner", email: "mmj@example.com", firstName: "J", lastName: "J" },
+      });
+      const bookerToken = signTestToken("mm-booker");
+      const joinerToken = signTestToken("mm-joiner");
+
+      const book = await request(app.getHttpServer())
+        .post("/bookings")
+        .set("Authorization", `Bearer ${bookerToken}`)
+        .send({
+          pitchId,
+          matchType: "RANKED",
+          startTime: "2030-09-01T18:00:00Z",
+          endTime: "2030-09-01T19:00:00Z",
+          totalCost: 4500,
+          teamSelectionMode: "SELECTED",
+          bookerTeam: "HOME",
+        })
+        .expect(201);
+      const matchId = book.body.match.id;
+
+      await request(app.getHttpServer())
+        .post(`/matches/${matchId}/join`)
+        .set("Authorization", `Bearer ${joinerToken}`)
+        .send({ team: "AWAY" })
+        .expect(201);
+
+      // Booker (creator) sees it
+      const bookerList = await request(app.getHttpServer())
+        .get("/users/me/matches")
+        .set("Authorization", `Bearer ${bookerToken}`);
+      expect(bookerList.status).toBe(200);
+      expect(bookerList.body).toHaveLength(1);
+      expect(bookerList.body[0].id).toBe(matchId);
+      expect(bookerList.body[0].pitch.venue.name).toBe("My Matches Arena");
+      expect(bookerList.body[0].participants).toHaveLength(2);
+
+      // Joiner sees it too
+      const joinerList = await request(app.getHttpServer())
+        .get("/users/me/matches")
+        .set("Authorization", `Bearer ${joinerToken}`);
+      expect(joinerList.body.map((m: any) => m.id)).toContain(matchId);
+
+      // After completion it still appears, with status + scores
+      await request(app.getHttpServer())
+        .post(`/matches/${matchId}/complete`)
+        .set("Authorization", `Bearer ${bookerToken}`)
+        .send({ homeScore: 2, awayScore: 1 })
+        .expect(200);
+
+      const afterComplete = await request(app.getHttpServer())
+        .get("/users/me/matches")
+        .set("Authorization", `Bearer ${bookerToken}`);
+      expect(afterComplete.body[0].status).toBe("COMPLETED");
+      expect(afterComplete.body[0].homeScore).toBe(2);
+      expect(afterComplete.body[0].awayScore).toBe(1);
+    });
+  });
 });

@@ -18,6 +18,18 @@ export class UsersController {
     return this.usersService.getMe(userId);
   }
 
+  @Get("matches")
+  @UseGuards(JwtAuthGuard)
+  myMatches(@Req() req: any) {
+    const userId: string | null = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedException(
+        "User not provisioned. Call POST /auth/sync first.",
+      );
+    }
+    return this.usersService.getMyMatches(userId);
+  }
+
   @Get("rating")
   @UseGuards(JwtAuthGuard)
   rating(@Req() req: any) {

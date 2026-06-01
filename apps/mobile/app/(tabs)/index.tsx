@@ -19,9 +19,8 @@ function VenueCard({ venue }: { venue: Venue }) {
   const router = useRouter();
   const pitch = venue.pitches[0];
 
-  function handleBook() {
-    if (!pitch) return;
-    router.push(`/book/${pitch.id}`);
+  function handleOpen() {
+    router.push(`/venue/${venue.id}`);
   }
 
   return (
@@ -54,13 +53,12 @@ function VenueCard({ venue }: { venue: Venue }) {
       )}
 
       <Pressable
-        onPress={handleBook}
-        disabled={!pitch}
-        className="items-center rounded-xl bg-joga-volt py-3.5 active:opacity-80"
+        onPress={handleOpen}
+        className="min-h-[48px] items-center justify-center rounded-xl bg-joga-volt py-3.5 active:opacity-80"
         accessibilityRole="button"
-        accessibilityLabel={`Book ${venue.name}`}
+        accessibilityLabel={`View slots and matches at ${venue.name}`}
       >
-        <Text className="text-base font-bold text-joga-black">Book Now</Text>
+        <Text className="text-base font-bold text-joga-black">View slots & matches</Text>
       </Pressable>
     </View>
   );

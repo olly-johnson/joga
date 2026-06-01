@@ -12,6 +12,16 @@ export function useMatches() {
   });
 }
 
+export function useMyMatches() {
+  return useQuery<MatchSummary[]>({
+    queryKey: ["my-matches"],
+    queryFn: async () => {
+      const { data } = await api.get<MatchSummary[]>("/users/me/matches");
+      return data;
+    },
+  });
+}
+
 export function useMatch(id: string | undefined) {
   return useQuery<MatchDetail>({
     queryKey: ["matches", id],

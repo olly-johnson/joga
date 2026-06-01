@@ -29,6 +29,19 @@ export class UsersService {
     return { rating: latest?.ratingAfter ?? DEFAULT_RATING };
   }
 
+  getMyMatches(userId: string) {
+    return this.prisma.match.findMany({
+      where: { participants: { some: { userId } } },
+      include: {
+        pitch: { include: { venue: true } },
+        participants: {
+          include: { user: { select: { id: true, firstName: true, lastName: true } } },
+        },
+      },
+      orderBy: { startTime: "desc" },
+    });
+  }
+
   async getEloHistory(userId: string) {
     return this.prisma.eloRating.findMany({
       where: { userId },

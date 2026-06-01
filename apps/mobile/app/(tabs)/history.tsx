@@ -5,16 +5,16 @@ import { splitMyMatches } from "@/lib/venue-slots";
 import { MatchCard } from "@/components/match-card";
 import { colors } from "@/constants/Colors";
 
-export default function MatchesScreen() {
+export default function HistoryScreen() {
   const { data, isLoading, error } = useMyMatches();
-  const active = data ? splitMyMatches(data).active : [];
+  const history = data ? splitMyMatches(data).history : [];
 
   return (
     <SafeAreaView className="flex-1 bg-joga-dark" edges={["top"]}>
       <View className="px-4 pb-4 pt-2">
-        <Text className="text-3xl font-extrabold text-joga-text">My Matches</Text>
+        <Text className="text-3xl font-extrabold text-joga-text">History</Text>
         <Text className="mt-1 text-sm text-joga-muted">
-          Games you&apos;ve booked or joined
+          Your completed and cancelled matches
         </Text>
       </View>
 
@@ -25,19 +25,19 @@ export default function MatchesScreen() {
       ) : error ? (
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-center text-base text-joga-muted">
-            Could not load your matches. Make sure the API is running.
+            Could not load history. Make sure the API is running.
           </Text>
         </View>
       ) : (
         <FlatList
-          data={active}
+          data={history}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <MatchCard match={item} />}
           contentContainerStyle={{ paddingBottom: 24 }}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center px-8 pt-16">
               <Text className="text-center text-base text-joga-muted">
-                No upcoming matches. Pick a venue to book or join a game.
+                No past matches yet. Completed games will show up here.
               </Text>
             </View>
           }

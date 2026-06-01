@@ -44,8 +44,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="matches"
         options={{
-          title: "Matches",
+          title: "My Matches",
           tabBarIcon: ({ color }) => <TabBarIcon name="trophy" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          tabBarIcon: ({ color }) => <TabBarIcon name="history" color={color} />,
         }}
       />
       <Tabs.Screen

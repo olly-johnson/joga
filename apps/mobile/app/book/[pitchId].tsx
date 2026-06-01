@@ -86,7 +86,11 @@ function PickerChip({
 }
 
 export default function BookingScreen() {
-  const { pitchId } = useLocalSearchParams<{ pitchId: string }>();
+  const { pitchId, day, hour: hourParam } = useLocalSearchParams<{
+    pitchId: string;
+    day?: string;
+    hour?: string;
+  }>();
   const router = useRouter();
   const { data: venues } = useVenues();
   const { mutate: book, isPending } = useCreateBooking();
@@ -101,8 +105,12 @@ export default function BookingScreen() {
   }, [venues, pitchId]);
 
   const dates = useMemo(() => upcomingDates(new Date(), 7), []);
-  const [dateIndex, setDateIndex] = useState(0);
-  const [hour, setHour] = useState(19);
+  const initialDay = Math.min(Math.max(Number(day) || 0, 0), 6);
+  const initialHour = BOOKABLE_HOURS.includes(Number(hourParam))
+    ? Number(hourParam)
+    : 19;
+  const [dateIndex, setDateIndex] = useState(initialDay);
+  const [hour, setHour] = useState(initialHour);
   const [matchType, setMatchType] = useState<"FRIENDLY" | "RANKED">("RANKED");
   const [mode, setMode] = useState<TeamSelectionMode>("SELECTED");
   const [bookerTeam, setBookerTeam] = useState<Team>("HOME");
@@ -135,7 +143,7 @@ export default function BookingScreen() {
   if (!pitch) {
     return (
       <SafeAreaView className="flex-1 bg-joga-dark" edges={["top"]}>
-        <Stack.Screen options={{ title: "Book pitch" }} />
+        <Stack.Screen options={{ headerShown: true, title: "Book pitch" }} />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color={colors.volt} />
         </View>

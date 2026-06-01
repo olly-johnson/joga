@@ -52,7 +52,7 @@ export default function MatchDetailScreen() {
   if (isLoading || !match) {
     return (
       <SafeAreaView className="flex-1 bg-joga-dark" edges={["top"]}>
-        <Stack.Screen options={{ title: "Match" }} />
+        <Stack.Screen options={{ headerShown: true, title: "Match" }} />
         <View className="flex-1 items-center justify-center">
           {error ? (
             <Text className="px-8 text-center text-joga-muted">
@@ -114,7 +114,7 @@ export default function MatchDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-joga-dark" edges={["top"]}>
-      <Stack.Screen options={{ title: "Match" }} />
+      <Stack.Screen options={{ headerShown: true, title: "Match" }} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
         <Text className="mb-1 text-3xl font-extrabold text-joga-text">
           {match.pitch.venue.name}
