@@ -1,66 +1,64 @@
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useVenues } from "@/hooks/use-venues";
 import type { Pitch, Venue } from "@/lib/types";
 import { colors } from "@/constants/Colors";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Icon,
+  LoadingState,
+  Screen,
+  ScreenHeader,
+} from "@/components/ui";
 
-function pitchLabel(type: Pitch["type"]): string {
-  return type === "FIVE_A_SIDE" ? "5-a-side" : "7-a-side";
+function summarisePitches(pitches: Pitch[]): string {
+  if (pitches.length === 0) return "No pitches listed";
+  const has5 = pitches.some((p) => p.type === "FIVE_A_SIDE");
+  const has7 = pitches.some((p) => p.type === "SEVEN_A_SIDE");
+  const sizes = [has5 && "5-a-side", has7 && "7-a-side"].filter(Boolean).join(" & ");
+  const count = `${pitches.length} ${pitches.length === 1 ? "pitch" : "pitches"}`;
+  return sizes ? `${count} · ${sizes}` : count;
 }
 
 function VenueCard({ venue }: { venue: Venue }) {
   const router = useRouter();
-  const pitch = venue.pitches[0];
-
-  function handleOpen() {
-    router.push(`/venue/${venue.id}`);
-  }
+  const surfaces = Array.from(new Set(venue.pitches.map((p) => p.surface)));
 
   return (
-    <View className="mx-4 mb-4 rounded-2xl border border-joga-border bg-joga-card p-4">
-      <View className="mb-3 flex-row items-start justify-between">
+    <Card className="mx-5 mb-4 p-5">
+      <View className="mb-4 flex-row items-center gap-3.5">
+        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-joga-volt/15">
+          <Icon name="map-pin" size={20} color={colors.volt} />
+        </View>
         <View className="flex-1">
-          <Text className="mb-1 text-lg font-bold text-joga-text">
+          <Text className="font-heading text-lg leading-6 tracking-tight text-joga-text">
             {venue.name}
           </Text>
-          <Text className="text-sm text-joga-muted">
-            {venue.latitude.toFixed(2)}, {venue.longitude.toFixed(2)}
+          <Text className="mt-0.5 font-body text-sm text-joga-muted">
+            {summarisePitches(venue.pitches)}
           </Text>
         </View>
-        {pitch && (
-          <View className="rounded-full bg-joga-volt/10 px-3 py-1">
-            <Text className="text-xs font-bold text-joga-volt">
-              {pitchLabel(pitch.type)}
-            </Text>
-          </View>
-        )}
       </View>
 
-      {pitch && (
-        <View className="mb-4 flex-row items-center gap-4">
-          <View className="flex-row items-center gap-1.5">
-            <View className="h-2 w-2 rounded-full bg-joga-cyan" />
-            <Text className="text-sm text-joga-muted">{pitch.surface}</Text>
-          </View>
+      {surfaces.length > 0 && (
+        <View className="mb-5 flex-row flex-wrap gap-2">
+          {surfaces.map((s) => (
+            <Badge key={s} label={s} tone="neutral" />
+          ))}
         </View>
       )}
 
-      <Pressable
-        onPress={handleOpen}
-        className="min-h-[48px] items-center justify-center rounded-xl bg-joga-volt py-3.5 active:opacity-80"
-        accessibilityRole="button"
+      <Button
+        label="View slots & matches"
+        icon="arrow-right"
+        onPress={() => router.push(`/venue/${venue.id}`)}
         accessibilityLabel={`View slots and matches at ${venue.name}`}
-      >
-        <Text className="text-base font-bold text-joga-black">View slots & matches</Text>
-      </Pressable>
-    </View>
+      />
+    </Card>
   );
 }
 
@@ -68,26 +66,16 @@ export default function VenueFeedScreen() {
   const { data: venues, isLoading, error } = useVenues();
 
   return (
-    <SafeAreaView className="flex-1 bg-joga-dark" edges={["top"]}>
-      <View className="px-4 pb-4 pt-2">
-        <Text className="text-3xl font-extrabold text-joga-text">
-          Nearby Pitches
-        </Text>
-        <Text className="mt-1 text-sm text-joga-muted">
-          Find your next game
-        </Text>
-      </View>
+    <Screen edges={["top"]}>
+      <ScreenHeader
+        title="Pitches"
+        subtitle="Book a slot or join a game near you"
+      />
 
       {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.volt} />
-        </View>
+        <LoadingState />
       ) : error ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-center text-base text-joga-muted">
-            Could not load venues. Make sure the API is running.
-          </Text>
-        </View>
+        <ErrorState message="Could not load venues. Make sure the API is running." />
       ) : (
         <FlatList
           data={venues}
@@ -96,14 +84,14 @@ export default function VenueFeedScreen() {
           contentContainerStyle={{ paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View className="flex-1 items-center justify-center px-8 pt-16">
-              <Text className="text-center text-base text-joga-muted">
-                No venues yet. Seed the database to see pitches here.
-              </Text>
-            </View>
+            <EmptyState
+              icon="map-pin"
+              title="No venues yet"
+              message="Seed the database to see pitches and open matches here."
+            />
           }
         />
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }

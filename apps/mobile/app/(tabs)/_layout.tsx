@@ -1,34 +1,33 @@
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import Feather from "@expo/vector-icons/Feather";
 import { Tabs } from "expo-router";
 import { colors } from "@/constants/Colors";
 
 function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>["name"];
+  name: React.ComponentProps<typeof Feather>["name"];
   color: string;
 }) {
-  return <FontAwesome size={24} style={{ marginBottom: -3 }} {...props} />;
+  return <Feather size={22} {...props} />;
 }
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerShown: false,
         tabBarActiveTintColor: colors.volt,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {
           backgroundColor: colors.black,
-          borderTopColor: colors.border,
+          borderTopColor: colors.hairline,
           borderTopWidth: 1,
           height: 88,
           paddingBottom: 32,
-          paddingTop: 8,
+          paddingTop: 10,
         },
-        headerStyle: {
-          backgroundColor: colors.dark,
-        },
-        headerTintColor: colors.text,
-        headerTitleStyle: {
-          fontWeight: "700",
+        tabBarLabelStyle: {
+          fontFamily: "SpaceGrotesk_600SemiBold",
+          fontSize: 11,
+          marginTop: 4,
         },
       }}
     >
@@ -36,23 +35,21 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Pitches",
-          tabBarIcon: ({ color }) => (
-            <TabBarIcon name="futbol-o" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <TabBarIcon name="map-pin" color={color} />,
         }}
       />
       <Tabs.Screen
         name="matches"
         options={{
-          title: "My Matches",
-          tabBarIcon: ({ color }) => <TabBarIcon name="trophy" color={color} />,
+          title: "Matches",
+          tabBarIcon: ({ color }) => <TabBarIcon name="calendar" color={color} />,
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
           title: "History",
-          tabBarIcon: ({ color }) => <TabBarIcon name="history" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="clock" color={color} />,
         }}
       />
       <Tabs.Screen

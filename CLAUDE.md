@@ -208,19 +208,29 @@ The mobile app lives in `apps/mobile/` using Expo SDK 54, Expo Router v6 (file-b
 
 **Styling:** All styles via NativeWind utility classes — no raw `StyleSheet.create()` in new code. Theme tokens are defined in `tailwind.config.js` under `theme.extend.colors.joga` and mirrored in `constants/Colors.ts` for non-Tailwind contexts (navigation theme, StatusBar).
 
+**Design direction (warm-charcoal banking):** the UI is matched to a reference banking app — a warm charcoal base (not pure black), raised charcoal surfaces, a soft lime accent, and white. Restraint is the rule: **volt (lime `#C9F259`) is the single primary accent** (CTAs, selected state, branding), **white is used for high-emphasis pills/cards and the away team**, and **pink is reserved for destructive state**. Buttons are **pill-shaped** (`rounded-full`); cards use large radii. Avoid emojis, em/en dashes, and casual phrasing in shipped copy (guarded by `__tests__/no-emoji.test.ts`).
+
+**Shared UI kit (`components/ui/`):** build screens from these primitives rather than re-styling inline — `Screen`/`ScreenHeader`/`SectionLabel`, `Card`/`PressableCard`, `Button` (primary/white/secondary/ghost/danger), `Badge`, `SegmentedControl`, `Avatar` (initials), `StatHero` (the "balance" card), `ListRow`, `Icon` (Feather line icons, standardised), and `LoadingState`/`ErrorState`/`EmptyState`. Exported from `components/ui/index.ts`.
+
+**Typography:** Space Grotesk is loaded via `@expo-google-fonts/space-grotesk` in `app/_layout.tsx` (matches the reference). Use the semantic font classes (`font-display`, `font-heading`, `font-semibold`, `font-medium`, `font-body`) — each maps to a specific cut, so the family carries the weight; prefer them over `font-bold`.
+
 **UI Color Palette:**
 
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `joga-black` | `#0A0A0A` | True black for text-on-accent, tab bar bg |
-| `joga-dark` | `#121212` | Screen backgrounds |
-| `joga-card` | `#1A1A1A` | Card/container backgrounds |
-| `joga-border` | `#2A2A2A` | Card borders, dividers |
-| `joga-muted` | `#6B6B6B` | Secondary text, inactive icons |
-| `joga-text` | `#F5F5F5` | Primary text |
-| `joga-volt` | `#CCFF00` | Primary accent — CTAs, selected states, branding |
-| `joga-pink` | `#FF2D78` | Secondary accent — alerts, live indicators |
-| `joga-cyan` | `#00F0FF` | Tertiary accent — surface badges, data highlights |
+| `joga-black` | `#161618` | Deepest charcoal: tab bar bg, behind sheets |
+| `joga-dark` | `#262628` | Screen backgrounds |
+| `joga-card` | `#2F2F33` | Card/container surfaces |
+| `joga-elevated` | `#3A3A3F` | Raised surfaces: inputs, segmented track, chips |
+| `joga-hairline` | `#363639` | Faint dividers |
+| `joga-border` | `#45454B` | Card borders, stronger dividers |
+| `joga-muted` | `#9C9CA2` | Secondary text (AA on charcoal), inactive icons |
+| `joga-text2` | `#CACAD0` | Secondary-emphasis text |
+| `joga-text` | `#F7F7F8` | Primary text |
+| `joga-white` | `#FFFFFF` | High-emphasis pills/cards, away team |
+| `joga-volt` | `#C9F259` | Primary accent (lime): CTAs, selected state, branding |
+| `joga-pink` | `#FF6B6B` | Destructive state only |
+| `joga-onaccent` | `#18181A` | Text/icon on a lime or white surface |
 
 **Screenshots:** Run `pnpm exec tsx scripts/capture-screenshots.ts` to capture web-rendered screenshots of all screens via Playwright. Output in `screenshots/`.
 
